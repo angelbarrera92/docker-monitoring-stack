@@ -1,0 +1,33 @@
+# Example override file for advanced networking scenarios
+# Copy to docker-compose.override.yml and customize
+#
+# Usage: docker compose up -d
+# (Docker Compose automatically merges docker-compose.override.yml)
+
+# =============================================================================
+# OPTION 1: Host network mode (for VPN access - Tailscale/WireGuard/OpenVPN)
+# =============================================================================
+# Uncomment below to give Prometheus direct access to host network interfaces.
+# This allows scraping targets over VPN tunnels (tailscale0, wg0, tun0, etc.)
+# Note: Port mapping is ignored in host mode (Prometheus always on port 9090)
+#
+# services:
+#   prometheus:
+#     network_mode: host
+
+# =============================================================================
+# OPTION 2: Join an existing Docker network from another stack
+# =============================================================================
+# Use this if you have another compose stack that created a network you need.
+# For example, a Tailscale container stack or a shared services network.
+#
+# services:
+#   prometheus:
+#     networks:
+#       - default
+#       - shared
+#
+# networks:
+#   shared:
+#     external: true
+#     name: my-other-stack_network  # The actual Docker network name

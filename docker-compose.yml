@@ -1,0 +1,21 @@
+services:
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.48.0}
+    container_name: ${PROMETHEUS_CONTAINER_NAME:-prometheus}
+    restart: ${RESTART_POLICY:-unless-stopped}
+    network_mode: ${PROMETHEUS_NETWORK_MODE:-}
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${PROMETHEUS_DATA_PATH:-prometheus_data}:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}'
+      - '--web.enable-lifecycle'
+
+networks:
+  default:
+    name: ${MONITORING_NETWORK:-monitoring}
+    driver: bridge
