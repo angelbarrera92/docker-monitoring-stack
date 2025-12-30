@@ -31,3 +31,93 @@
 #   shared:
 #     external: true
 #     name: my-other-stack_network  # The actual Docker network name
+
+# =============================================================================
+# OPTION 3: Add a reverse proxy (Traefik example)
+# =============================================================================
+# This example adds Traefik as a reverse proxy with automatic HTTPS via Let's Encrypt.
+# Required: Set GRAFANA_ROOT_URL and GRAFANA_DOMAIN in .env
+#
+# services:
+#   traefik:
+#     image: traefik:v3.0
+#     container_name: traefik
+#     restart: unless-stopped
+#     command:
+#       - "--api.insecure=true"
+#       - "--providers.docker=true"
+#       - "--providers.docker.exposedbydefault=false"
+#       - "--entrypoints.web.address=:80"
+#       - "--entrypoints.websecure.address=:443"
+#       - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+#       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+#       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+#       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+#       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes:
+#       - /var/run/docker.sock:/var/run/docker.sock:ro
+#       - traefik_certs:/letsencrypt
+#
+#   grafana:
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN}`)"
+#       - "traefik.http.routers.grafana.entrypoints=websecure"
+#       - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+#       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+#     # Remove direct port exposure when using reverse proxy
+#     ports: !reset []
+#
+#   prometheus:
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.prometheus.rule=Host(`prometheus.${GRAFANA_DOMAIN}`)"
+#       - "traefik.http.routers.prometheus.entrypoints=websecure"
+#       - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+#       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+#     ports: !reset []
+#
+# volumes:
+#   traefik_certs:
+
+# =============================================================================
+# OPTION 4: Add a reverse proxy (Caddy example - simpler)
+# =============================================================================
+# Caddy handles HTTPS automatically with minimal configuration.
+#
+# services:
+#   caddy:
+#     image: caddy:2-alpine
+#     container_name: caddy
+#     restart: unless-stopped
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes:
+#       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+#       - caddy_data:/data
+#       - caddy_config:/config
+#
+#   grafana:
+#     ports: !reset []
+#
+#   prometheus:
+#     ports: !reset []
+#
+# volumes:
+#   caddy_data:
+#   caddy_config:
+#
+# --- Create ./caddy/Caddyfile with: ---
+# grafana.yourdomain.com {
+#     reverse_proxy grafana:3000
+# }
+# prometheus.yourdomain.com {
+#     reverse_proxy prometheus:9090
+#     basicauth {
+#         admin $2a$14$hashedpassword
+#     }
+# }

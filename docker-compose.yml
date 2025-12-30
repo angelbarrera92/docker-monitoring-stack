@@ -1,6 +1,6 @@
 services:
   prometheus:
-    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.48.0}
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v3.8.1}
     container_name: ${PROMETHEUS_CONTAINER_NAME:-prometheus}
     restart: ${RESTART_POLICY:-unless-stopped}
     network_mode: ${PROMETHEUS_NETWORK_MODE:-}
@@ -14,6 +14,41 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}'
       - '--web.enable-lifecycle'
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-12.3.1}
+    container_name: ${GRAFANA_CONTAINER_NAME:-grafana}
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ${GRAFANA_DATA_PATH:-grafana_data}:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      # Datasource configuration
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090}
+      # Server settings
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
+      - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN:-localhost}
+      # Security
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGN_UP:-false}
+      - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=${GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION:-false}
+      - GF_AUTH_BASIC_ENABLED=${GF_AUTH_BASIC_ENABLED:-true}
+      - GF_AUTH_DISABLE_LOGIN_FORM=${GF_AUTH_DISABLE_LOGIN_FORM:-false}
+      - GF_INSTALL_PLUGINS=${GF_INSTALL_PLUGINS:-}
+      # GitHub OAuth (optional - set GF_AUTH_GITHUB_ENABLED=true to enable)
+      - GF_AUTH_GITHUB_ENABLED=${GF_AUTH_GITHUB_ENABLED:-false}
+      - GF_AUTH_GITHUB_ALLOW_SIGN_UP=${GF_AUTH_GITHUB_ALLOW_SIGN_UP:-true}
+      - GF_AUTH_GITHUB_AUTO_LOGIN=${GF_AUTH_GITHUB_AUTO_LOGIN:-false}
+      - GF_AUTH_GITHUB_CLIENT_ID=${GF_AUTH_GITHUB_CLIENT_ID:-}
+      - GF_AUTH_GITHUB_CLIENT_SECRET=${GF_AUTH_GITHUB_CLIENT_SECRET:-}
+      - GF_AUTH_GITHUB_SCOPES=${GF_AUTH_GITHUB_SCOPES:-user:email,read:org}
+      - GF_AUTH_GITHUB_ALLOWED_ORGANIZATIONS=${GF_AUTH_GITHUB_ALLOWED_ORGANIZATIONS:-}
+      - GF_AUTH_GITHUB_ROLE_ATTRIBUTE_PATH=${GF_AUTH_GITHUB_ROLE_ATTRIBUTE_PATH:-}
+      - GF_AUTH_GITHUB_ALLOW_ASSIGN_GRAFANA_ADMIN=${GF_AUTH_GITHUB_ALLOW_ASSIGN_GRAFANA_ADMIN:-false}
+      - GF_AUTH_GITHUB_ROLE_ATTRIBUTE_STRICT=${GF_AUTH_GITHUB_ROLE_ATTRIBUTE_STRICT:-false}
 
 networks:
   default:
